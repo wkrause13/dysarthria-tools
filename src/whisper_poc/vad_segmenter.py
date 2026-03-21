@@ -9,10 +9,19 @@ class CompletedUtterance:
 
 
 class VadSegmenter:
-    def __init__(self, sample_rate: int, frame_ms: int, silence_ms: int) -> None:
+    def __init__(
+        self,
+        sample_rate: int,
+        frame_ms: int,
+        silence_ms: int,
+        max_utterance_ms: int = 0,
+    ) -> None:
         self.sample_rate = sample_rate
         self.frame_ms = frame_ms
         self.silence_frames = max(1, silence_ms // frame_ms)
+        self.max_utterance_frames = (
+            max_utterance_ms // frame_ms if max_utterance_ms > 0 else 0
+        )
         self._buffer = bytearray()
         self._speech_frames = 0
         self._trailing_silence_frames = 0
@@ -24,6 +33,17 @@ class VadSegmenter:
             self._trailing_silence_frames = 0
             self._speech_frames += 1
             self._buffer.extend(frame_bytes)
+            if self.max_utterance_frames and self._speech_frames >= self.max_utterance_frames:
+                utterance = CompletedUtterance(
+                    bytes(self._buffer),
+                    self._speech_frames,
+                    0,
+                )
+                self._buffer.clear()
+                self._speech_frames = 0
+                self._trailing_silence_frames = 0
+                self._active = False
+                return utterance
             return None
 
         if not self._active:
