@@ -1,0 +1,30 @@
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments and local Python tooling
+.venv/
+venv/
+env/
+.python-version
+*.egg-info/
+.eggs/
+pip-wheel-metadata/
+
+# Test and coverage artifacts
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+
+# Local app runtime output
+tmp_audio/
+
+# Notebook and editor noise
+.ipynb_checkpoints/
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo
