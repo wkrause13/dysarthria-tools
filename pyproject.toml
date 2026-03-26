@@ -9,6 +9,7 @@ description = "Mac-local whisper.cpp proof of concept for dysarthric speech"
 requires-python = ">=3.11"
 dependencies = [
   "numpy>=2.0.0",
+  "praat-parselmouth>=0.4.3",
   "pyobjc-framework-Cocoa>=11.0",
   "sounddevice>=0.5.0",
   "soundfile>=0.13.0",
