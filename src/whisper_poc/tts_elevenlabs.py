@@ -3,7 +3,7 @@ from __future__ import annotations
 import threading
 import time
 from collections import deque
-from typing import Any
+from typing import Any, Callable
 
 import httpx
 import sounddevice as sd
@@ -22,6 +22,7 @@ class ElevenLabsSpeaker:
         enabled: bool = True,
         client: httpx.Client | None = None,
         stream_factory: Any = None,
+        on_error: Callable[[str], None] | None = None,
     ) -> None:
         self.api_key = api_key
         self.voice_id = voice_id
@@ -30,6 +31,7 @@ class ElevenLabsSpeaker:
         self.enabled = enabled
         self._client = client or httpx.Client(timeout=30.0)
         self._stream_factory = stream_factory or self._default_stream_factory
+        self._on_error = on_error
         self._pending_text: deque[str] = deque()
         self._is_playing = False
         self._stop_event = threading.Event()
@@ -84,7 +86,8 @@ class ElevenLabsSpeaker:
                         break
                     stream.write(chunk)
         except Exception:
-            pass
+            if self._on_error is not None:
+                self._on_error(text)
         finally:
             if stream is not None:
                 try:

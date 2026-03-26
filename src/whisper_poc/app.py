@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import argparse
 import csv
-import os
 import time
 import wave
 from pathlib import Path
@@ -19,6 +18,7 @@ from whisper_poc.audio_capture import (
 )
 from whisper_poc.config import AppConfig
 from whisper_poc.speaker_gate import EnrollmentSpeakerGate, resolve_enrollment_paths
+from whisper_poc.tts_fallback import build_speaker
 from whisper_poc.tts_local import MacSpeaker
 from whisper_poc.vad_segmenter import VadSegmenter
 
@@ -59,10 +59,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--temp-dir", default="tmp_audio")
     parser.add_argument("--no-tts", action="store_true")
     parser.add_argument(
-        "--tts-provider", choices=["native", "elevenlabs"], default="native"
+        "--tts-provider", choices=["native", "elevenlabs", "azure"], default="native"
     )
     parser.add_argument("--elevenlabs-voice-id", default=None)
     parser.add_argument("--elevenlabs-model", default="eleven_flash_v2_5")
+    parser.add_argument("--azure-speech-region", default="eastus")
+    parser.add_argument("--azure-voice", default="en-US-JennyNeural")
     return parser
 
 
@@ -193,22 +195,7 @@ def run_endpointed_mode(args: argparse.Namespace, config: AppConfig) -> None:
         model_path=args.model_path,
         language=args.language,
     )
-    if args.tts_provider == "elevenlabs":
-        api_key = os.environ.get("ELEVENLABS_API_KEY")
-        if not api_key:
-            raise SystemExit(
-                "ELEVENLABS_API_KEY env var required with --tts-provider elevenlabs"
-            )
-        from whisper_poc.tts_elevenlabs import ElevenLabsSpeaker
-
-        speaker = ElevenLabsSpeaker(
-            api_key=api_key,
-            voice_id=args.elevenlabs_voice_id or "21m00Tcm4TlvDq8ikWAM",
-            model_id=args.elevenlabs_model,
-            enabled=config.tts_enabled,
-        )
-    else:
-        speaker = MacSpeaker(voice=config.tts_voice, enabled=config.tts_enabled)
+    speaker = build_speaker(args, config)
 
     blocksize = config.sample_rate * config.frame_ms // 1000
     expected_bytes = frame_byte_count(config.sample_rate, config.frame_ms, config.channels)
@@ -279,6 +266,8 @@ def run_endpointed_mode(args: argparse.Namespace, config: AppConfig) -> None:
             if is_hallucination(result.transcript):
                 print(f"[ignored] hallucination: {result.transcript!r}")
                 continue
+            if hasattr(speaker, "set_utterance_path"):
+                speaker.set_utterance_path(utterance_path)
             tts_runtime_seconds = speaker.speak(result.transcript)
             metrics_row = build_metrics_row(
                 utterance_index=utterance_index,

@@ -227,3 +227,56 @@ def test_process_queue_noop_when_playing():
     assert speaker.process_queue() == 0.0
     assert speaker.has_pending() is True
     assert len(client.calls) == 0
+
+
+class ErrorClient:
+    """Client that raises on stream, simulating network/API failure."""
+
+    def stream(self, method, url, *, headers=None, params=None, json=None):
+        class ErrorResponse:
+            status_code = 500
+
+            def raise_for_status(self):
+                raise httpx.HTTPStatusError(
+                    "error", request=MagicMock(), response=MagicMock()
+                )
+
+            def iter_bytes(self, chunk_size=4096):
+                return []
+
+            def __enter__(self_):
+                return self_
+
+            def __exit__(self_, *a):
+                pass
+
+        return ErrorResponse()
+
+
+def test_on_error_called_when_streaming_fails():
+    errors: list[str] = []
+    stream = FakeOutputStream()
+    speaker = ElevenLabsSpeaker(
+        api_key="k",
+        voice_id="v",
+        enabled=True,
+        client=ErrorClient(),
+        stream_factory=lambda sr: stream,
+        on_error=lambda text: errors.append(text),
+    )
+
+    speaker.speak("hello fallback")
+    _wait_for_idle(speaker)
+
+    assert errors == ["hello fallback"]
+
+
+def test_on_error_not_called_on_success():
+    errors: list[str] = []
+    speaker, client, stream = _make_speaker()
+    speaker._on_error = lambda text: errors.append(text)
+
+    speaker.speak("hello")
+    _wait_for_idle(speaker)
+
+    assert errors == []
