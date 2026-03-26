@@ -1,7 +1,34 @@
+import re
 import subprocess
 import time
 from dataclasses import dataclass
 from pathlib import Path
+
+_NORMALIZE_RE = re.compile(r"[^\w\s]", re.UNICODE)
+
+_HALLUCINATION_PHRASES: frozenset[str] = frozenset(
+    {
+        "thank you for watching",
+        "thanks for watching",
+        "thanks for watching and see you next time",
+        "thank you for watching and see you next time",
+        "thanks for watching and ill see you in the next video",
+        "thank you for watching and ill see you in the next video",
+        "please subscribe",
+        "subscribe",
+        "like and subscribe",
+        "see you next time",
+        "see you in the next video",
+        "see you in the next one",
+        "subtitles by the amaraorg community",
+        "you",
+    }
+)
+
+
+def is_hallucination(transcript: str) -> bool:
+    normalized = _NORMALIZE_RE.sub("", transcript).strip().lower()
+    return normalized in _HALLUCINATION_PHRASES
 
 
 @dataclass(slots=True)

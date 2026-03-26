@@ -28,3 +28,6 @@ tmp_audio/
 .vscode/
 *.swp
 *.swo
+
+models/*
+merged_model/*

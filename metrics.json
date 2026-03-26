@@ -1,0 +1,25 @@
+{
+  "train_metrics": {
+    "train_runtime": 355.9283,
+    "train_samples_per_second": 3.793,
+    "train_steps_per_second": 0.253,
+    "total_flos": 3.93030144e+17,
+    "train_loss": 1.1468949019908905,
+    "epoch": 30.0
+  },
+  "eval_metrics": {
+    "eval_loss": 0.6759356260299683,
+    "eval_wer": 7.317073170731707,
+    "eval_runtime": 2.9567,
+    "eval_samples_per_second": 1.691,
+    "eval_steps_per_second": 0.676,
+    "epoch": 30.0
+  },
+  "run_root": "/opt/whisper-lora/whisper-small-dysarthria-lora",
+  "adapter_dir": "/opt/whisper-lora/whisper-small-dysarthria-lora/lora_adapter",
+  "merged_dir": "/opt/whisper-lora/whisper-small-dysarthria-lora/merged_model",
+  "examples": {
+    "train": 45,
+    "validation": 5
+  }
+}
